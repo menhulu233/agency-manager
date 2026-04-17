@@ -29,10 +29,14 @@ function detectCommand(cmd: string): string | null {
   }
 }
 
+const AI_TOOL_TYPES = DETECTABLE_TOOLS.map(t => t.tool_type)
+
 export function registerCLIsHandlers() {
   ipcMain.handle('clis:list', () => {
     const db = getDatabase()
-    const stmt = db.prepare('SELECT * FROM cli_tools')
+    const placeholders = AI_TOOL_TYPES.map(() => '?').join(',')
+    const stmt = db.prepare(`SELECT * FROM cli_tools WHERE tool_type IN (${placeholders})`)
+    stmt.bind(AI_TOOL_TYPES)
     const results: any[] = []
     while (stmt.step()) {
       results.push(stmt.getAsObject())
@@ -45,6 +49,12 @@ export function registerCLIsHandlers() {
     const db = getDatabase()
     const detected: any[] = []
     const now = new Date().toISOString()
+
+    // Remove legacy non-AI tools from DB
+    const placeholders = AI_TOOL_TYPES.map(() => '?').join(',')
+    const deleteStmt = db.prepare(`DELETE FROM cli_tools WHERE tool_type NOT IN (${placeholders})`)
+    deleteStmt.run(AI_TOOL_TYPES)
+    deleteStmt.free()
 
     const seenTypes = new Set<string>()
 
