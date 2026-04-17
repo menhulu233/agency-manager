@@ -3,6 +3,14 @@ import { getDatabase } from '../database'
 import { v4 as uuidv4 } from 'uuid'
 
 export function registerAgentsHandlers() {
+  function parseAgent(agent: any) {
+    return {
+      ...agent,
+      tags: typeof agent.tags === 'string' ? JSON.parse(agent.tags || '[]') : agent.tags,
+      tool_connections: typeof agent.tool_connections === 'string' ? JSON.parse(agent.tool_connections || '[]') : agent.tool_connections
+    }
+  }
+
   ipcMain.handle('agents:list', (_, category?: string) => {
     const db = getDatabase()
     if (category) {
@@ -10,7 +18,7 @@ export function registerAgentsHandlers() {
       stmt.bind([category])
       const results: any[] = []
       while (stmt.step()) {
-        results.push(stmt.getAsObject())
+        results.push(parseAgent(stmt.getAsObject()))
       }
       stmt.free()
       return results
@@ -18,7 +26,7 @@ export function registerAgentsHandlers() {
     const stmt = db.prepare('SELECT * FROM agents')
     const results: any[] = []
     while (stmt.step()) {
-      results.push(stmt.getAsObject())
+      results.push(parseAgent(stmt.getAsObject()))
     }
     stmt.free()
     return results
@@ -30,7 +38,7 @@ export function registerAgentsHandlers() {
     stmt.bind([id])
     let result = null
     if (stmt.step()) {
-      result = stmt.getAsObject()
+      result = parseAgent(stmt.getAsObject())
     }
     stmt.free()
     return result
@@ -73,9 +81,9 @@ export function registerAgentsHandlers() {
     const stmt = db.prepare('SELECT * FROM agents WHERE id = ?')
     stmt.bind([id])
     if (stmt.step()) {
-      const agent = stmt.getAsObject()
+      const agent = parseAgent(stmt.getAsObject())
       stmt.free()
-      const connections = JSON.parse((agent.tool_connections as string) || '[]')
+      const connections = agent.tool_connections || []
       if (!connections.includes(tool)) {
         connections.push(tool)
         const updateStmt = db.prepare('UPDATE agents SET tool_connections = ? WHERE id = ?')
