@@ -1,6 +1,6 @@
 {
   "name": "agency-manager",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "AI Agency Manager - Desktop application for managing AI agents, LLM configs, and MCP servers",
   "main": "dist-electron/main.js",
   "scripts": {
