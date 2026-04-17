@@ -5,6 +5,8 @@ interface CLIsState {
   tools: CLITool[]
   selectedTool: CLITool | null
   loading: boolean
+  detecting: boolean
+  detectMessage: string | null
   loadTools: () => Promise<void>
   selectTool: (tool: CLITool | null) => void
   connectTool: (id: string) => Promise<void>
@@ -16,6 +18,8 @@ export const useCLIsStore = create<CLIsState>((set) => ({
   tools: [],
   selectedTool: null,
   loading: false,
+  detecting: false,
+  detectMessage: null,
 
   loadTools: async () => {
     set({ loading: true })
@@ -45,10 +49,22 @@ export const useCLIsStore = create<CLIsState>((set) => ({
   },
 
   detectTools: async () => {
-    const detected = await window.electronAPI.clis.detect()
-    if (detected && detected.length > 0) {
+    set({ detecting: true, detectMessage: null })
+    try {
+      const detected = await window.electronAPI.clis.detect()
       const tools = await window.electronAPI.clis.list()
-      set({ tools })
+      const selected = tools.find((t: CLITool) => t.id === tools[0]?.id) || null
+      set({
+        tools,
+        detecting: false,
+        detectMessage: `Detected ${detected.length} tools`,
+        selectedTool: selected
+      })
+      setTimeout(() => set({ detectMessage: null }), 3000)
+    } catch (error) {
+      console.error('Failed to detect CLI tools:', error)
+      set({ detecting: false, detectMessage: 'Detection failed' })
+      setTimeout(() => set({ detectMessage: null }), 3000)
     }
   }
 }))

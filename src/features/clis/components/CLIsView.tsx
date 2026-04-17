@@ -8,7 +8,25 @@ const TOOL_ICONS: Record<string, string> = {
   cursor: '📎',
   openclaw: '🌊',
   windsurf: '🌀',
-  aider: '🔧'
+  aider: '🔧',
+  vscode: '💻',
+  node: '⬢',
+  npm: '📦',
+  pnpm: '📦',
+  yarn: '🧶',
+  python: '🐍',
+  git: '🔀',
+  docker: '🐳',
+  kubectl: '☸️',
+  gh: '🐙',
+  terraform: '🏗️',
+  aws: '☁️',
+  az: '☁️',
+  gcloud: '☁️',
+  bun: '🥟',
+  deno: '🦕',
+  cargo: '🦀',
+  go: '🐹'
 }
 
 const STATUS_COLORS = {
@@ -19,7 +37,7 @@ const STATUS_COLORS = {
 
 export default function CLIsView() {
   const { t } = useI18n()
-  const { tools, selectedTool, loadTools, selectTool, connectTool, disconnectTool, detectTools } = useCLIsStore()
+  const { tools, selectedTool, loading, detecting, detectMessage, loadTools, selectTool, connectTool, disconnectTool, detectTools } = useCLIsStore()
 
   useEffect(() => {
     loadTools()
@@ -33,6 +51,8 @@ export default function CLIsView() {
       await connectTool(selectedTool.id)
     }
   }
+
+  const connectedCount = tools.filter(t => t.status === 'connected').length
 
   const leftSidebar = (
     <LeftSidebar title={t('clis.title')}>
@@ -49,12 +69,22 @@ export default function CLIsView() {
           <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[tool.status]}`}></span>
         </div>
       ))}
+
+      <div className="text-[11px] text-gray-500 uppercase tracking-wide px-3 py-4">{t('leftsidebar.statusOverview')}</div>
+      <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-500">
+        <span className="w-2 h-2 rounded-full bg-green-500"></span>
+        <span>{connectedCount} {t('status.connected')}</span>
+      </div>
+      <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-500">
+        <span className="w-2 h-2 rounded-full bg-gray-600"></span>
+        <span>{tools.length - connectedCount} {t('status.disconnected')}</span>
+      </div>
     </LeftSidebar>
   )
 
   const center = (
     <>
-      <div className="flex gap-2 p-3 border-b border-card">
+      <div className="flex gap-2 p-3 border-b border-card items-center">
         <input
           type="text"
           placeholder={t('search.placeholder')}
@@ -62,32 +92,53 @@ export default function CLIsView() {
         />
         <button
           onClick={() => detectTools()}
-          className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-opacity-90"
+          disabled={detecting}
+          className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-opacity-90 disabled:opacity-50"
         >
-          {t('clis.detectNew')}
+          {detecting ? '...' : `+ ${t('clis.detectNew')}`}
         </button>
       </div>
+      {detectMessage && (
+        <div className="px-3 pt-2">
+          <div className="bg-[var(--input-bg)] border border-card rounded-lg px-3 py-2 text-xs text-gray-400">
+            {detectMessage}
+          </div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
-        <CardGrid>
-          {tools.map(tool => (
-            <div
-              key={tool.id}
-              className="bg-card rounded-lg p-3 cursor-pointer border-2 border-transparent hover:border-accent transition"
-              onClick={() => selectTool(tool)}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">{TOOL_ICONS[tool.tool_type] || '🔧'}</span>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium truncate">{tool.name}</h4>
-                  <p className="text-[10px] text-gray-500">{tool.tool_type}</p>
+        {tools.length === 0 && !loading ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm">
+            <span className="text-3xl mb-2">🔍</span>
+            <p>No CLI tools found</p>
+            <p className="text-xs text-gray-600 mt-1">Click "Detect New" to scan your system</p>
+          </div>
+        ) : (
+          <CardGrid>
+            {tools.map(tool => (
+              <div
+                key={tool.id}
+                className={`cli-card bg-card rounded-lg p-3 cursor-pointer border-2 transition ${
+                  selectedTool?.id === tool.id ? 'border-accent' : 'border-transparent hover:border-accent'
+                }`}
+                onClick={() => selectTool(tool)}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xl">{TOOL_ICONS[tool.tool_type] || '🔧'}</span>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium truncate">{tool.name}</h4>
+                    <p className="text-[10px] text-gray-500">{tool.tool_type}</p>
+                  </div>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[tool.status]} text-black`}>
+                    {tool.status === 'connected' ? t('status.connected') : tool.status === 'disconnected' ? t('status.disconnected') : t('status.pending')}
+                  </span>
                 </div>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[tool.status]} text-black`}>
-                  {tool.status === 'connected' ? t('status.connected') : tool.status === 'disconnected' ? t('status.disconnected') : t('status.pending')}
-                </span>
+                <div className="text-[10px] px-1.5 py-0.5 bg-[var(--input-bg)] border border-[var(--input-border)] rounded font-mono text-gray-400 truncate">
+                  {tool.path || t('clis.notDetected')}
+                </div>
               </div>
-            </div>
-          ))}
-        </CardGrid>
+            ))}
+          </CardGrid>
+        )}
       </div>
     </>
   )
@@ -110,7 +161,7 @@ export default function CLIsView() {
             </div>
             <div className="flex justify-between p-2 bg-card rounded">
               <span className="text-xs text-gray-500">{t('clis.path')}</span>
-              <span className="text-xs">{selectedTool.path || t('clis.notDetected')}</span>
+              <span className="text-xs truncate max-w-[180px]" title={selectedTool.path}>{selectedTool.path || t('clis.notDetected')}</span>
             </div>
           </div>
           <button
