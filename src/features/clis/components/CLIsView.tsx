@@ -9,24 +9,10 @@ const TOOL_ICONS: Record<string, string> = {
   openclaw: '🌊',
   windsurf: '🌀',
   aider: '🔧',
-  vscode: '💻',
-  node: '⬢',
-  npm: '📦',
-  pnpm: '📦',
-  yarn: '🧶',
-  python: '🐍',
-  git: '🔀',
-  docker: '🐳',
-  kubectl: '☸️',
-  gh: '🐙',
-  terraform: '🏗️',
-  aws: '☁️',
-  az: '☁️',
-  gcloud: '☁️',
-  bun: '🥟',
-  deno: '🦕',
-  cargo: '🦀',
-  go: '🐹'
+  opencode: '🔓',
+  gemini_cli: '♊',
+  kimi: '🌙',
+  qwen: '🔶'
 }
 
 const STATUS_COLORS = {
