@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTemplatesStore } from '../store'
 import { ThreeColumnLayout, LeftSidebar, CardGrid, DetailPanel } from '../../../shared/components'
 import { useI18n } from '../../../shared/i18n'
@@ -18,10 +18,18 @@ export default function TemplatesView() {
   const [importText, setImportText] = useState('')
   const [importFormat, setImportFormat] = useState<'json' | 'yaml'>('yaml')
   const [processing, setProcessing] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [exportFormat, setExportFormat] = useState<'json' | 'yaml'>('yaml')
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     loadTemplates()
   }, [])
+
+  const filteredTemplates = useMemo(() => {
+    if (!selectedCategory) return templates
+    return templates.filter(tmpl => tmpl.category === selectedCategory)
+  }, [templates, selectedCategory])
 
   const handleApply = async () => {
     if (!selectedTemplate) return
@@ -39,13 +47,42 @@ export default function TemplatesView() {
     setImportText('')
   }
 
+  const handleExport = async () => {
+    if (!selectedTemplate) return
+    setExporting(true)
+    try {
+      const result = await window.electronAPI.templates.export([selectedTemplate.id], exportFormat)
+      const blob = new Blob([result], { type: exportFormat === 'yaml' ? 'text/yaml' : 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${selectedTemplate.name}.${exportFormat}`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('Export failed:', e)
+    }
+    setExporting(false)
+  }
+
   const leftSidebar = (
     <LeftSidebar title={t('templates.templateCategories')}>
+      <div
+        className={`left-item px-3 py-2.5 rounded-lg flex items-center gap-2.5 cursor-pointer text-sm mb-0.5 ${
+          selectedCategory === null ? 'bg-accent text-white' : 'text-gray-400 hover:bg-card'
+        }`}
+        onClick={() => setSelectedCategory(null)}
+      >
+        <span className="text-base">📋</span>
+        <span className="flex-1">{t('category.all')}</span>
+      </div>
       {CATEGORIES.map(c => (
         <div
           key={c.id}
-          className="left-item px-3 py-2.5 rounded-lg flex items-center gap-2.5 cursor-pointer text-sm text-gray-400 hover:bg-card transition mb-0.5"
-          onClick={() => {}}
+          className={`left-item px-3 py-2.5 rounded-lg flex items-center gap-2.5 cursor-pointer text-sm transition mb-0.5 ${
+            selectedCategory === c.id ? 'bg-accent text-white' : 'text-gray-400 hover:bg-card'
+          }`}
+          onClick={() => setSelectedCategory(c.id)}
         >
           <span className="text-base">{c.icon}</span>
           <span className="flex-1">{t(`templates.category.${c.id}`)}</span>
@@ -114,10 +151,12 @@ export default function TemplatesView() {
       )}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
         <CardGrid>
-          {templates.map(tmpl => (
+          {filteredTemplates.map(tmpl => (
             <div
               key={tmpl.id}
-              className="bg-card rounded-lg p-3 cursor-pointer border-2 border-transparent hover:border-accent transition"
+              className={`bg-card rounded-lg p-3 cursor-pointer border-2 transition ${
+                selectedTemplate?.id === tmpl.id ? 'border-accent' : 'border-transparent hover:border-accent'
+              }`}
               onClick={() => selectTemplate(tmpl)}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -160,6 +199,28 @@ export default function TemplatesView() {
               <div className="text-[10px] text-gray-500">{t('templates.size')}</div>
             </div>
           </div>
+
+          <div className="pt-2 border-t border-card">
+            <div className="text-xs text-gray-500 mb-2">{t('common.export') || '导出模板'}</div>
+            <div className="flex gap-2 mb-2">
+              <select
+                value={exportFormat}
+                onChange={e => setExportFormat(e.target.value as 'json' | 'yaml')}
+                className="px-2 py-1.5 bg-card border border-card rounded text-xs text-[var(--text)]"
+              >
+                <option value="yaml">YAML</option>
+                <option value="json">JSON</option>
+              </select>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex-1 px-3 py-1.5 bg-[var(--button-secondary-bg)] text-[var(--text)] text-xs rounded hover:bg-[var(--button-secondary-hover)] disabled:opacity-50"
+              >
+                {exporting ? '...' : t('common.export') || '导出'}
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={handleApply}
             disabled={processing}

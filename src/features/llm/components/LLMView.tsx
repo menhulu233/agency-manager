@@ -11,12 +11,17 @@ const PROVIDER_COLORS: Record<string, string> = {
   ollama: '#f97316'
 }
 
+const PROVIDER_TYPES = ['anthropic', 'openai', 'google', 'groq', 'ollama']
+
 export default function LLMView() {
   const { t } = useI18n()
   const { providers, selectedProvider, loadProviders, selectProvider, configureProvider, loadUsage, usage } = useLLMStore()
   const [apiKey, setApiKey] = useState('')
   const [defaultModel, setDefaultModel] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addForm, setAddForm] = useState({ name: '', provider_type: 'anthropic', default_model: '', api_key: '' })
+  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     loadProviders()
@@ -39,6 +44,16 @@ export default function LLMView() {
       is_active: true
     })
     setSaving(false)
+  }
+
+  const handleAdd = async () => {
+    if (!addForm.name.trim() || !addForm.default_model.trim()) return
+    setAdding(true)
+    // UI placeholder - backend create logic to be wired later
+    console.log('Create provider:', addForm)
+    setAdding(false)
+    setShowAddModal(false)
+    setAddForm({ name: '', provider_type: 'anthropic', default_model: '', api_key: '' })
   }
 
   const leftSidebar = (
@@ -84,7 +99,10 @@ export default function LLMView() {
           placeholder={t('search.placeholder')}
           className="flex-1 px-3 py-2 bg-card border border-card rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
         />
-        <button className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-opacity-90">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-opacity-90"
+        >
           + {t('llm.addNew')}
         </button>
       </div>
@@ -121,6 +139,74 @@ export default function LLMView() {
           ))}
         </CardGrid>
       </div>
+
+      {/* Add Provider Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-panel rounded-xl p-5 w-[360px] shadow-xl border border-card">
+            <h3 className="text-sm font-medium mb-4">{t('llm.addNewProvider') || '添加 LLM 提供商'}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('llm.providerName') || '名称'}</label>
+                <input
+                  type="text"
+                  value={addForm.name}
+                  onChange={e => setAddForm({ ...addForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                  placeholder="Claude"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('llm.providerType') || '类型'}</label>
+                <select
+                  value={addForm.provider_type}
+                  onChange={e => setAddForm({ ...addForm, provider_type: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                >
+                  {PROVIDER_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('llm.defaultModel')}</label>
+                <input
+                  type="text"
+                  value={addForm.default_model}
+                  onChange={e => setAddForm({ ...addForm, default_model: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                  placeholder="claude-3-sonnet-20240229"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('mcp.apiKey')}</label>
+                <input
+                  type="password"
+                  value={addForm.api_key}
+                  onChange={e => setAddForm({ ...addForm, api_key: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                  placeholder={t('mcp.enterApiKey')}
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleAdd}
+                  disabled={adding}
+                  className="flex-1 px-3 py-2 bg-accent text-white text-xs rounded-lg disabled:opacity-50"
+                >
+                  {adding ? '...' : t('common.create') || '创建'}
+                </button>
+                <button
+                  onClick={() => { setShowAddModal(false); setAddForm({ name: '', provider_type: 'anthropic', default_model: '', api_key: '' }) }}
+                  className="flex-1 px-3 py-2 bg-[var(--button-secondary-bg)] text-[var(--text)] text-xs rounded-lg hover:bg-[var(--button-secondary-hover)]"
+                >
+                  {t('common.cancel') || '取消'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 

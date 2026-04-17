@@ -3,6 +3,13 @@ import { useTeamsStore } from '../store'
 import { ThreeColumnLayout, LeftSidebar, CardGrid, DetailPanel } from '../../../shared/components'
 import { useI18n } from '../../../shared/i18n'
 
+// Static mock members for UI demonstration until backend IPC is wired
+const MOCK_MEMBERS = [
+  { id: 'm1', name: 'Claude Code', icon: '🤖', role: 'agent' },
+  { id: 'm2', name: 'Cursor', icon: '📎', role: 'agent' },
+  { id: 'm3', name: 'Frontend Developer', icon: '🖥️', role: 'agent' },
+]
+
 export default function TeamsView() {
   const { t } = useI18n()
   const { teams, selectedTeam, loadTeams, selectTeam, createTeam, updateTeam, deleteTeam, launchTeam } = useTeamsStore()
@@ -219,7 +226,7 @@ export default function TeamsView() {
             </button>
           </div>
         ) : (
-          <div>
+          <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">{selectedTeam.icon}</span>
               <div>
@@ -227,7 +234,34 @@ export default function TeamsView() {
                 <div className="text-[10px] text-gray-500">{t('teams.createdAt')} {selectedTeam.created_at?.split('T')[0]}</div>
               </div>
             </div>
-            <p className="text-xs text-gray-400 mb-3">{selectedTeam.description || t('teams.noDescription')}</p>
+            <p className="text-xs text-gray-400">{selectedTeam.description || t('teams.noDescription')}</p>
+
+            {/* Team Members UI */}
+            <div className="pt-2 border-t border-card">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500">{t('teams.members') || '团队成员'}</span>
+                <span className="text-[10px] px-1.5 py-0.5 bg-[var(--tag-bg)] rounded text-gray-400">{MOCK_MEMBERS.length}</span>
+              </div>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin pr-1">
+                {MOCK_MEMBERS.map(member => (
+                  <div key={member.id} className="flex items-center gap-2 p-2 bg-card rounded-lg">
+                    <span className="text-base">{member.icon}</span>
+                    <span className="flex-1 text-xs truncate">{member.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 bg-[var(--button-secondary-bg)] rounded text-gray-400 capitalize">
+                      {member.role}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="w-full mt-2 px-3 py-1.5 bg-[var(--button-secondary-bg)] text-[var(--text)] text-xs rounded-lg hover:bg-[var(--button-secondary-hover)] opacity-50 cursor-not-allowed"
+                disabled
+                title="Coming soon"
+              >
+                + {t('teams.addMember') || '添加成员'}
+              </button>
+            </div>
+
             <div className="flex gap-2">
               <button
                 onClick={handleLaunch}

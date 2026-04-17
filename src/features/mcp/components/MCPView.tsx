@@ -12,6 +12,8 @@ const SERVER_ICONS: Record<string, string> = {
   sentry: '🚨'
 }
 
+const SERVER_TYPES = ['pinecone', 'local', 'github', 'slack', 'database']
+
 const STATUS_COLORS = {
   'running': 'bg-green-500',
   'stopped': 'bg-yellow-500',
@@ -25,6 +27,9 @@ export default function MCPView() {
   const [apiKey, setApiKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addForm, setAddForm] = useState({ name: '', server_type: 'local', address: '', api_key: '' })
+  const [adding, setAdding] = useState(false)
 
   useEffect(() => {
     loadServers()
@@ -57,6 +62,16 @@ export default function MCPView() {
       api_key: apiKey
     })
     setSaving(false)
+  }
+
+  const handleAdd = async () => {
+    if (!addForm.name.trim()) return
+    setAdding(true)
+    // UI placeholder - backend create logic to be wired later
+    console.log('Create server:', addForm)
+    setAdding(false)
+    setShowAddModal(false)
+    setAddForm({ name: '', server_type: 'local', address: '', api_key: '' })
   }
 
   const leftSidebar = (
@@ -99,7 +114,10 @@ export default function MCPView() {
           placeholder={t('search.placeholder')}
           className="flex-1 px-3 py-2 bg-card border border-card rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
         />
-        <button className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-opacity-90">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-opacity-90"
+        >
           + {t('mcp.addServer')}
         </button>
       </div>
@@ -137,6 +155,74 @@ export default function MCPView() {
           ))}
         </CardGrid>
       </div>
+
+      {/* Add Server Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-panel rounded-xl p-5 w-[360px] shadow-xl border border-card">
+            <h3 className="text-sm font-medium mb-4">{t('mcp.addNewServer') || '添加 MCP 服务器'}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('mcp.serverName') || '名称'}</label>
+                <input
+                  type="text"
+                  value={addForm.name}
+                  onChange={e => setAddForm({ ...addForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                  placeholder="Memory"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('mcp.serverType') || '类型'}</label>
+                <select
+                  value={addForm.server_type}
+                  onChange={e => setAddForm({ ...addForm, server_type: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                >
+                  {SERVER_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('mcp.serverAddress')}</label>
+                <input
+                  type="text"
+                  value={addForm.address}
+                  onChange={e => setAddForm({ ...addForm, address: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-gray-500 block mb-1">{t('mcp.apiKey')}</label>
+                <input
+                  type="password"
+                  value={addForm.api_key}
+                  onChange={e => setAddForm({ ...addForm, api_key: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--input-bg)] border border-[var(--input-border)] rounded-lg text-sm text-[var(--text)]"
+                  placeholder={t('mcp.enterApiKey')}
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleAdd}
+                  disabled={adding}
+                  className="flex-1 px-3 py-2 bg-accent text-white text-xs rounded-lg disabled:opacity-50"
+                >
+                  {adding ? '...' : t('common.create') || '创建'}
+                </button>
+                <button
+                  onClick={() => { setShowAddModal(false); setAddForm({ name: '', server_type: 'local', address: '', api_key: '' }) }}
+                  className="flex-1 px-3 py-2 bg-[var(--button-secondary-bg)] text-[var(--text)] text-xs rounded-lg hover:bg-[var(--button-secondary-hover)]"
+                >
+                  {t('common.cancel') || '取消'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 
